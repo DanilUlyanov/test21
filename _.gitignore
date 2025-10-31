@@ -1,0 +1,80 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Виртуальное окружение
+.venv/
+env/
+venv/
+_venv/
+
+# Кэш и временные файлы
+*.log
+*.pot
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+*.db
+*.db-journal
+*.pid
+*.seed
+*.bak
+*.tmp
+*.swp
+
+# Компиляция C-расширений
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# IDE / Editor configs
+.vscode/
+.idea/
+*.iml
+
+# OS мусор
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Тестовые и отчётные файлы
+.coverage
+.tox/
+.nox/
+.pytest_cache/
+htmlcov/
+.cache/
+.mypy_cache/
+.dmypy.json
+.pyre/
+
+# Локальные артефакты
+logs/
+tmp/
+local/
+uploads/
+__output__/
+
+# Secrets и env
+.env
+.env.*
+*.key
+*.pem
+*.crt
+*.cer
+*.der
+*.p12
+
+# Docker
+*.pid
+docker-compose.override.yml
+
+# Jupyter / notebooks
+.ipynb_checkpoints/
+
+# VSCode Python settings
+.history/
+.python-version
