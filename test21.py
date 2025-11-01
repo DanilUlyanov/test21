@@ -1,6 +1,7 @@
 from datetime import datetime
 import logging
 import os
+import threading
 
 from dotenv import load_dotenv
 from flask import Flask
@@ -15,25 +16,42 @@ from telegram.ext import (
 )
 
 
-app = Flask(__name__)
-port = int(os.environ.get("PORT", 10000))
-app.run(host="0.0.0.0", port=port)
-
 load_dotenv()
+
+# Инициализация Flask
+app = Flask(__name__)
+
+
+@app.route("/")
+def home():
+    return "Бот запущен и работает!", 200
+
+
+@app.route("/health")
+def health():
+    return {"status": "healthy"}, 200
+
+
+# Загрузка токенов
 API_KEY = os.getenv("API_KEY")
 TG_KEY = os.getenv("TG_KEY")
+
 if not API_KEY:
     raise ValueError("Не найден API_KEY в переменных окружения (.env)")
 if not TG_KEY:
     raise ValueError("Не найден TG_KEY в переменных окружения (.env)")
+
 DEFAULT_CITIES = ["Москва", "Санкт-Петербург", "Сочи", "Игора"]
 DEFAULT_CITY = "Санкт-Петербург"
+
+# Настройка логирования
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
 logger = logging.getLogger(__name__)
-# Отключаем логирование httpx и httpcore для безопасности (скрываем токены)
+
+# Отключаем логирование httpx и httpcore (скрываем токены)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpx").propagate = False
 logging.getLogger("httpcore").setLevel(logging.WARNING)
@@ -41,10 +59,7 @@ logging.getLogger("httpcore").propagate = False
 
 
 def get_weather(city: str) -> str:
-    """
-    Получает погоду для указанного города через OpenWeatherMap API.
-    Возвращает строку с погодой или сообщение об ошибке.
-    """
+    """Получает погоду для указанного города через OpenWeatherMap API."""
     params = {
         "q": city,
         "appid": API_KEY,
@@ -53,7 +68,7 @@ def get_weather(city: str) -> str:
     }
     try:
         r = requests.get(
-            "http://api.openweathermap.org/data/2.5/weather", params=params
+            "https://api.openweathermap.org/data/2.5/weather", params=params
         )
         r.raise_for_status()
         data = r.json()
@@ -126,9 +141,7 @@ async def weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """
-    Обработчик текстовых сообщений — реагирует на ввод города (в т.ч. через клавиатуру)
-    """
+    """Обработчик текстовых сообщений — реагирует на ввод города"""
     city = update.message.text.strip()
     weather_info = get_weather(city)
     await update.message.reply_text(weather_info, parse_mode="HTML")
@@ -136,8 +149,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"Пользователь {update.effective_user.id} запросил погоду для {city}")
 
 
+def run_flask():
+    """Запускает Flask-сервер в отдельном потоке."""
+    port = int(os.environ.get("PORT", 10000))
+    logger.info(f"Запуск Flask на порту {port}")
+    app.run(host="0.0.0.0", port=port)
+
+
 def main():
-    """Запуск бота"""
+    """Запуск бота и Flask-сервера."""
+    # Запуск Flask в отдельном потоке
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
+    flask_thread.start()
+
+    # Запуск Telegram-бота
     application = Application.builder().token(TG_KEY).build()
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
@@ -145,7 +170,8 @@ def main():
     application.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
     )
-    logger.info("Бот запущен...")
+
+    logger.info("Запуск Telegram-бота...")
     application.run_polling()
 
 
