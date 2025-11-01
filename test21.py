@@ -3,6 +3,7 @@ import logging
 import os
 
 from dotenv import load_dotenv
+from flask import Flask
 import requests
 from telegram import KeyboardButton, ReplyKeyboardMarkup, Update
 from telegram.ext import (
@@ -13,6 +14,10 @@ from telegram.ext import (
     filters,
 )
 
+
+app = Flask(__name__)
+port = int(os.environ.get("PORT", 10000))
+app.run(host="0.0.0.0", port=port)
 
 load_dotenv()
 API_KEY = os.getenv("API_KEY")
